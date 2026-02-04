@@ -9,7 +9,12 @@ DB_USER="guac_user"
 DB_PASS="password" # Hier dein Passwort anpassen
 
 echo "Starting Apache Guacamole 1.6.0 installation for Ubuntu 24.04..."
-cd "$HOME"
+REAL_USER=${SUDO_USER:-$USER}
+REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+
+echo "Files will be stored in: $REAL_HOME"
+
+cd "$REAL_HOME"
 
 # 1. System Updates & Dependencies
 sudo apt update && sudo apt upgrade -y
@@ -47,12 +52,12 @@ sudo apt update
 sudo apt install -y tomcat10 tomcat10-admin tomcat10-common tomcat10-user
 
 # 7. Getting and Installing Guacamole Client & Migration Tool for Tomcat 10
-cd "$HOME"
+cd "$REAL_HOME"
 wget https://downloads.apache.org/guacamole/${GUAC_VERSION}/binary/guacamole-${GUAC_VERSION}.war
 wget https://dlcdn.apache.org/tomcat/jakartaee-migration/v${MIGRATION_TOOL_VER}/binaries/jakartaee-migration-${MIGRATION_TOOL_VER}-bin.tar.gz
 
 tar -xvf jakartaee-migration-${MIGRATION_TOOL_VER}-bin.tar.gz
-cd "$HOME"/jakartaee-migration-1.0.10-bin/jakartaee-migration-1.0.10/lib/
+cd "$REAL_HOME"/jakartaee-migration-1.0.10-bin/jakartaee-migration-1.0.10/lib/
 
 # Converting from Javax to Jakarta (Tomcat 10 Fix)
 java -jar apache-jakartaee-migration-${MIGRATION_TOOL_VER}/lib/jakartaee-migration-${MIGRATION_TOOL_VER}.jar guacamole-${GUAC_VERSION}.war guacamole-jakarta.war
@@ -68,18 +73,18 @@ sudo mysql -e "GRANT SELECT,INSERT,UPDATE,DELETE ON ${DB_NAME}.* TO '${DB_USER}'
 sudo mysql -e "FLUSH PRIVILEGES;"
 
 # 9. JDBC Extension & Connector
-cd "$HOME"
+cd "$REAL_HOME"
 wget https://downloads.apache.org/guacamole/${GUAC_VERSION}/binary/guacamole-auth-jdbc-${GUAC_VERSION}.tar.gz
 
 tar -xf guacamole-auth-jdbc-${GUAC_VERSION}.tar.gz
 sudo cp guacamole-auth-jdbc-${GUAC_VERSION}/mysql/guacamole-auth-jdbc-mysql-${GUAC_VERSION}.jar /etc/guacamole/extensions/
 
 # Schema Import
-cd "$HOME"
+cd "$REAL_HOME"
 cat guacamole-auth-jdbc-${GUAC_VERSION}/mysql/schema/*.sql | sudo mysql ${DB_NAME}
 
 # MySQL Connector
-cd "$HOME"
+cd "$REAL_HOME"
 wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-j-${MYSQL_CONN_VERSION}.tar.gz
 tar -xf mysql-connector-j-${MYSQL_CONN_VERSION}.tar.gz
 sudo cp mysql-connector-j-${MYSQL_CONN_VERSION}/mysql-connector-j-${MYSQL_CONN_VERSION}.jar /etc/guacamole/lib/
